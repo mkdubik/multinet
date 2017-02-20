@@ -13,7 +13,7 @@ void test_lart() {
 
 	MLNetworkSharedPtr mnet3 = read_multilayer("test/data/sample.mpx","sample",',');
 	uint32_t t = 4;
-	float eps = 1;
+	float eps = 0.8;
 	float gamma = 1;
 
 	k.get_ml_community(mnet3, t, eps, gamma);

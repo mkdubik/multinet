@@ -6,6 +6,7 @@
 #include <boost/numeric/ublas/matrix.hpp>
 #include <boost/numeric/ublas/io.hpp>
 
+namespace ublas = boost::numeric::ublas;
 
 namespace mlnet {
 
@@ -84,9 +85,25 @@ public:
 			 eps
 			 gamma
 	*/
+
 	hash_set<ActorSharedPtr> get_ml_community(MLNetworkSharedPtr mnet, uint32_t t, float eps, float gamma);
 
-	std::vector<boost::numeric::ublas::matrix<int>> ml_network2adj_matrix(MLNetworkSharedPtr mnet);
+	std::vector<ublas::matrix<float>> ml_network2adj_matrix(MLNetworkSharedPtr mnet);
+
+private:
+
+	ublas::matrix<float> supraA(std::vector<ublas::matrix<float>> a, float eps);
+
+	ublas::matrix<float> block_diag(std::vector<ublas::matrix<float>> a);
+
+	ublas::vector<float> sum(ublas::matrix<float> m, int axis);
+	ublas::matrix<float> sum(std::vector<ublas::matrix<float>> a, int axis);
+
+	ublas::matrix<float> diagA(ublas::matrix<float> m);
+
+	void prcheck(std::vector<ublas::matrix<float>> a, ublas::matrix<float> m);
+
+	ublas::matrix<float> matrix_power(ublas::matrix<float> m, uint32_t t);
 
 };
 
