@@ -79,31 +79,37 @@ class lart {
 public:
 	/*
 		Use: lart k;
-			 k.get_ml_community(MLNetworkSharedPtr, uint32_t, float, float);
+			 k.get_ml_community(MLNetworkSharedPtr, uint32_t, double, double);
 		Pre: MLNetworkSharedPtr is a multilayer network
 			 t is the number of number of steps for random walker to take
 			 eps
 			 gamma
 	*/
 
-	hash_set<ActorSharedPtr> get_ml_community(MLNetworkSharedPtr mnet, uint32_t t, float eps, float gamma);
+	hash_set<ActorSharedPtr> get_ml_community(MLNetworkSharedPtr mnet, uint32_t t, double eps, double gamma);
 
-	std::vector<ublas::matrix<float>> ml_network2adj_matrix(MLNetworkSharedPtr mnet);
+	std::vector<ublas::matrix<double>> ml_network2adj_matrix(MLNetworkSharedPtr mnet);
 
 private:
 
-	ublas::matrix<float> supraA(std::vector<ublas::matrix<float>> a, float eps);
+	void printm(const ublas::matrix<double> &m);
 
-	ublas::matrix<float> block_diag(std::vector<ublas::matrix<float>> a);
+	ublas::matrix<double> supraA(std::vector<ublas::matrix<double>> a, double eps);
 
-	ublas::vector<float> sum(ublas::matrix<float> m, int axis);
-	ublas::matrix<float> sum(std::vector<ublas::matrix<float>> a, int axis);
+	ublas::matrix<double> block_diag(std::vector<ublas::matrix<double>> a);
 
-	ublas::matrix<float> diagA(ublas::matrix<float> m);
+	ublas::vector<double> sum(ublas::matrix<double> m, int axis);
+	ublas::matrix<double> sum(std::vector<ublas::matrix<double>> a, int axis);
 
-	void prcheck(std::vector<ublas::matrix<float>> a, ublas::matrix<float> m);
+	ublas::matrix<double> diagA(ublas::matrix<double> m);
 
-	ublas::matrix<float> matrix_power(ublas::matrix<float> m, uint32_t t);
+	void prcheck(std::vector<ublas::matrix<double>> a, ublas::matrix<double> m);
+
+	ublas::matrix<double> matrix_power(ublas::matrix<double> m, uint32_t t);
+
+	ublas::matrix<double> Dmat(ublas::matrix<double> Pt, ublas::matrix<double> D, size_t L);
+
+	ublas::matrix<double> pairwise_distance(ublas::matrix<double> X);
 
 };
 
