@@ -68,9 +68,8 @@ file (GLOB_RECURSE SOURCES src/*.cpp)
 #	message (FATAL_ERROR "Doxygen is needed to build the documentation.")
 #endif()
 
+include_directories (/usr/include/eigen3)
 add_library (mlnetwork SHARED ${SOURCES})
-
-include_directories (/home/mikki/boost/)
 
 install (TARGETS mlnetwork
 	RUNTIME DESTINATION bin

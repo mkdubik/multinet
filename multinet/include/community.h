@@ -2,11 +2,8 @@
 #define MULTIPLENETWORK_COMMUNITY_H_
 
 #include "datastructures.h"
+#include <Eigen/Dense>
 
-#include <boost/numeric/ublas/matrix.hpp>
-#include <boost/numeric/ublas/io.hpp>
-
-namespace ublas = boost::numeric::ublas;
 
 namespace mlnet {
 
@@ -88,28 +85,21 @@ public:
 
 	hash_set<ActorSharedPtr> get_ml_community(MLNetworkSharedPtr mnet, uint32_t t, double eps, double gamma);
 
-	std::vector<ublas::matrix<double>> ml_network2adj_matrix(MLNetworkSharedPtr mnet);
+	std::vector<Eigen::MatrixXd> ml_network2adj_matrix(MLNetworkSharedPtr mnet);
 
 private:
 
-	void printm(const ublas::matrix<double> &m);
+	Eigen::MatrixXd supraA(std::vector<Eigen::MatrixXd> a, double eps);
 
-	ublas::matrix<double> supraA(std::vector<ublas::matrix<double>> a, double eps);
+	Eigen::MatrixXd block_diag(std::vector<Eigen::MatrixXd> a);
 
-	ublas::matrix<double> block_diag(std::vector<ublas::matrix<double>> a);
+	Eigen::MatrixXd diagA(Eigen::MatrixXd m);
 
-	ublas::vector<double> sum(ublas::matrix<double> m, int axis);
-	ublas::matrix<double> sum(std::vector<ublas::matrix<double>> a, int axis);
+	void prcheck(std::vector<Eigen::MatrixXd> a, Eigen::MatrixXd m);
 
-	ublas::matrix<double> diagA(ublas::matrix<double> m);
-
-	void prcheck(std::vector<ublas::matrix<double>> a, ublas::matrix<double> m);
-
-	ublas::matrix<double> matrix_power(ublas::matrix<double> m, uint32_t t);
-
-	ublas::matrix<double> Dmat(ublas::matrix<double> Pt, ublas::matrix<double> D, size_t L);
-
-	ublas::matrix<double> pairwise_distance(ublas::matrix<double> X);
+	Eigen::MatrixXd Dmat(Eigen::MatrixXd Pt, Eigen::MatrixXd D, size_t L);
+	Eigen::MatrixXd matrix_power(Eigen::MatrixXd m, uint32_t t);
+	Eigen::MatrixXd pairwise_distance(Eigen::MatrixXd X);
 
 };
 
