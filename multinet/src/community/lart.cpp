@@ -25,6 +25,7 @@ hash_set<ActorSharedPtr> lart::get_ml_community(
 
 std::vector<Eigen::MatrixXd> lart::ml_network2adj_matrix(MLNetworkSharedPtr mnet) {
 
+	DTRACE0(ML2AM_START);
 	size_t N = mnet->get_layers()->size();
 	size_t M = mnet->get_actors()->size();
 
@@ -42,6 +43,7 @@ std::vector<Eigen::MatrixXd> lart::ml_network2adj_matrix(MLNetworkSharedPtr mnet
 		adj[l->id - 1] = m;
 	}
 
+	DTRACE0(ML2AM_END);
 	return adj;
 }
 
@@ -115,17 +117,43 @@ Eigen::MatrixXd lart::Dmat(Eigen::MatrixXd Pt, Eigen::MatrixXd D, size_t L) {
 	Eigen::MatrixXd D_sqrt = D.array().sqrt();
 	Eigen::MatrixXd newP = Pt * D_sqrt;
 	Eigen::MatrixXd Dmat = 	Eigen::MatrixXd::Zero(N * L, N * L);
+	Eigen::IOFormat f(Eigen::StreamPrecision, 0, ",", ",", "[", "]", "[", "]");
 
-	for (size_t i = 0; i  < L - 1; ++i) {
-		auto k = pairwise_distance(newP.block(0, 0, 16, 32));
-		std::cout << k.rows() << k.cols() << std::endl;
+	for (size_t i = 0; i < L; ++i) {
+		// TODO Fix the magic number
+		auto m = pairwise_distance(newP.block(i * N, 0, 16, 32));
+		for (int j = 0; j < m.rows(); j++) {
+			for (int k = 0; k < m.cols(); k++) {
+				Dmat(j + (i * N), k + (i * N)) = m(j, k);
+			}
+		}
 	}
 
 	for (size_t i = 0; i  < L - 1; ++i) {
 		for (size_t j = i + 1; j < L; ++j) {
+			if (i != j) {
+				auto newx = newP.block(i * N, i * N, (i+1)*N, (i+1)*N);
+				auto newy = newP.block(j * N, j * N, (i+1)*N, (i+1)*N);
 
+				auto tnewx = newP.block(j * N, i * N, (i+1)*N, (i+1)*N);
+				auto tnewy = newP.block(i * N, j * N, (i+1)*N, (i+1)*N);
+
+				Eigen::MatrixXd m1(newx.rows(), newx.cols()+tnewy.cols());
+				Eigen::MatrixXd m2(newy.rows(), newy.cols()+tnewx.cols());
+
+				m1 << newx,tnewy;
+				m2 << newy,tnewx;
+
+				//TODO missing if len(l) > 0
+
+				auto dmat = pairwise_distance(newx, newy);
+				Dmat.block(i * N, i * N, (i+1)*N, (i+1)*N) = dmat;
+				Dmat.block(j * N, j * N, (i+1)*N, (i+1)*N) = dmat.transpose();
+
+			}
 		}
 	}
+	//std::cout << Dmat << std::endl;
 	return Dmat;
 }
 
@@ -135,13 +163,28 @@ Eigen::MatrixXd lart::pairwise_distance(Eigen::MatrixXd X) {
 	Eigen::MatrixXd YY = XX.transpose();
 	Eigen::MatrixXd distances = (X * X.transpose()).unaryExpr([](const double x) { return x * -2;});
 
-	Eigen::IOFormat f(Eigen::StreamPrecision, 0, ",", ",", "[", "]", "[", "]");
 	for (int i = 0; i < distances.rows(); i++) {
 		distances.col(i).array() += XX.array();
 		distances.row(i).array() += YY.array();
 		//distances(i, i) = 0.0;
 	}
 	return distances.array().sqrt();
+}
+
+Eigen::MatrixXd lart::pairwise_distance(Eigen::MatrixXd X, Eigen::MatrixXd Y) {
+
+	Eigen::MatrixXd XX = (X.array() * X.array()).rowwise().sum();
+	Eigen::MatrixXd YY = (Y.array() * Y.array()).rowwise().sum().transpose();
+	Eigen::MatrixXd distances = (X * X.transpose()).unaryExpr([](const double x) { return x * -2;});
+
+	for (int i = 0; i < distances.rows(); i++) {
+		distances.col(i).array() += XX.array();
+		distances.row(i).array() += YY.array();
+		//distances(i, i) = 0.0;
+	}
+	return distances.array().sqrt();
+
+
 }
 
 

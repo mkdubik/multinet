@@ -2,6 +2,8 @@
 #define MULTIPLENETWORK_COMMUNITY_H_
 
 #include "datastructures.h"
+#include "dtrace.h"
+
 #include <Eigen/Dense>
 
 
@@ -100,7 +102,7 @@ private:
 	Eigen::MatrixXd Dmat(Eigen::MatrixXd Pt, Eigen::MatrixXd D, size_t L);
 	Eigen::MatrixXd matrix_power(Eigen::MatrixXd m, uint32_t t);
 	Eigen::MatrixXd pairwise_distance(Eigen::MatrixXd X);
-
+	Eigen::MatrixXd pairwise_distance(Eigen::MatrixXd X, Eigen::MatrixXd Y);
 };
 
 

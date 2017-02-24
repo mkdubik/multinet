@@ -69,12 +69,41 @@ file (GLOB_RECURSE SOURCES src/*.cpp)
 #endif()
 
 include_directories (/usr/include/eigen3)
-add_library (mlnetwork SHARED ${SOURCES})
+
+
+OPTION(DTRACE "Add dtrace support to target" OFF)
+IF(DTRACE)
+	IF(NOT WIN32)
+		execute_process(COMMAND which dtrace OUTPUT_VARIABLE out)
+		IF (NOT out)
+			message(FATAL_ERROR "dtrace generator not found!")
+		ENDIF()
+
+		execute_process(COMMAND dtrace -h -s include/dtrace_probes.d -o include/dtrace_probes.h)
+
+		if(UNIX AND NOT APPLE)
+
+			execute_process(COMMAND dtrace -G -s include/dtrace_probes.d -o include/dtrace_probes.o)
+
+			add_library (mlnetwork SHARED ${SOURCES} include/dtrace_probes.o)
+		ELSE()
+			add_library (mlnetwork SHARED ${SOURCES})
+
+		ENDIF()
+
+		ADD_DEFINITIONS(-DUSE_DYNAMIC_TRACE)
+
+
+	ENDIF()
+ELSE()
+	add_library (mlnetwork SHARED ${SOURCES})
+ENDIF(DTRACE)
 
 install (TARGETS mlnetwork
 	RUNTIME DESTINATION bin
 	LIBRARY DESTINATION lib
 	ARCHIVE DESTINATION lib)
 
-
 add_subdirectory(test)
+
+
