@@ -92,17 +92,29 @@ public:
 private:
 
 	Eigen::MatrixXd supraA(std::vector<Eigen::MatrixXd> a, double eps);
-
 	Eigen::MatrixXd block_diag(std::vector<Eigen::MatrixXd> a);
-
 	Eigen::MatrixXd diagA(Eigen::MatrixXd m);
-
 	void prcheck(std::vector<Eigen::MatrixXd> a, Eigen::MatrixXd m);
-
 	Eigen::MatrixXd Dmat(Eigen::MatrixXd Pt, Eigen::MatrixXd D, size_t L);
 	Eigen::MatrixXd matrix_power(Eigen::MatrixXd m, uint32_t t);
 	Eigen::MatrixXd pairwise_distance(Eigen::MatrixXd X);
 	Eigen::MatrixXd pairwise_distance(Eigen::MatrixXd X, Eigen::MatrixXd Y);
+	void updateDt(Eigen::MatrixXd Dt, Eigen::MatrixXd A0);
+
+	std::vector<std::vector<int>> AgglomerativeClustering(Eigen::MatrixXd Dt, std::string Linkage);
+
+	struct pair {
+		int ix_x;
+		int ix_y;
+		double smallest;
+	};
+
+	pair find_smallest_ix(Eigen::MatrixXd Dt);
+
+	void removeRow(Eigen::MatrixXd& matrix, unsigned int rowToRemove);
+	void removeColumn(Eigen::MatrixXd& matrix, unsigned int colToRemove);
+	void updateDt(Eigen::MatrixXd& Dt, pair p, std::vector<int> merges);
+
 };
 
 
