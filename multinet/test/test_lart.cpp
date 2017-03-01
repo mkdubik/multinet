@@ -23,40 +23,15 @@ void test_lart() {
 
 	/*
 
-	matrix power unit test
-	ublas::matrix<float> aa = ublas::zero_matrix<float>(2,2);
+	Agglomerative Clustering unit test
+	Eigen::MatrixXd tmp = Eigen::MatrixXd::Zero(5, 5);
+	tmp(0, 0) = 0.0;tmp(0, 1) = 17.0;tmp(0, 2) = 21.0;tmp(0, 3) = 31.0;tmp(0, 4) = 23.0;
+	tmp(1, 0) = 17.0;tmp(1, 1) = 0.0;tmp(1, 2) = 30.0;tmp(1, 3) = 34.0;tmp(1, 4) = 21.0;
+	tmp(2, 0) = 21.0;tmp(2, 1) = 30.0;tmp(2, 2) = 0.0;tmp(2, 3) = 28.0;tmp(2, 4) = 39.0;
+	tmp(3, 0) = 31.0;tmp(3, 1) = 34.0;tmp(3, 2) = 28.0;tmp(3, 3) = 0.0;tmp(3, 4) = 43.0;
+	tmp(4, 0) = 23.0;tmp(4, 1) = 21.0;tmp(4, 2) = 39.0;tmp(4, 3) = 43.0;tmp(4, 4) = 0.0;
 
-	aa(0,0) = 1;aa(0,1) = 1;
-	aa(1,0) = 1;aa(1,1) = 1;
-
-	printm(matrix_power(aa , 2));
-	---
-
-	block_diag unit test
-	std::vector<ublas::matrix<float>> v;
-
-	ublas::matrix<float> aa = ublas::zero_matrix<float>(3,3);
-	ublas::matrix<float> bb = ublas::zero_matrix<float>(3,3);
-	ublas::matrix<float> cc = ublas::zero_matrix<float>(3,3);
-
-	aa(0,0) = 1;aa(0,1) = 1;aa(0,2) = 1;
-	aa(1,0) = 1;aa(1,1) = 1;aa(1,2) = 1;
-	aa(2,0) = 1;aa(2,1) = 1;aa(2,2) = 1;
-
-	bb(0,0) = 2;bb(0,1) = 2;bb(0,2) = 2;
-	bb(1,0) = 2;bb(1,1) = 2;bb(1,2) = 2;
-	bb(2,0) = 2;bb(2,1) = 2;bb(2,2) = 2;
-
-	cc(0,0) = 3;cc(0,1) = 3;cc(0,2) = 3;
-	cc(1,0) = 3;cc(1,1) = 3;cc(1,2) = 3;
-	cc(2,0) = 3;cc(2,1) = 3;cc(2,2) = 3;
-
-
-	v.push_back(aa);
-	v.push_back(bb);
-	v.push_back(cc);
-
-	printm(block_diag(v)); */
+	*/
 
 
 

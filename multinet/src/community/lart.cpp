@@ -12,7 +12,6 @@ namespace mlnet {
 hash_set<ActorSharedPtr> lart::get_ml_community(
 	MLNetworkSharedPtr mnet, uint32_t t, double eps, double gamma) {
 
-
 	std::setprecision(11);
 	std::cout.precision(11);
 
@@ -27,38 +26,65 @@ hash_set<ActorSharedPtr> lart::get_ml_community(
 	Eigen::MatrixXd Pt = matrix_power(P, t);
 	Eigen::MatrixXd Dt = Dmat(Pt, D, a.size());
 
-	UNUSED(Dt);
 	UNUSED(gamma);
 	UNUSED(A0);
 
+	std::vector<std::vector<int>> x = AgglomerativeClustering(Dt, "average");
 
-	Eigen::IOFormat f(Eigen::StreamPrecision, 0, ",", ",", "[", "]", "[", "]");
+	for (size_t i = 0; i < x.size(); i++) {
+		for (size_t j = 0; j < x[i].size(); j++) {
+			std::cout << x[i][j] << " ";
+		}
+		std::cout << std::endl;
+	}
 
-	//updateDt(Dt, A0);
+	std::cout<< x.size() << std::endl;
 
-	Eigen::MatrixXd tmp = Eigen::MatrixXd::Zero(5, 5);
-
-	tmp(0, 0) = 0.0;tmp(0, 1) = 17.0;tmp(0, 2) = 21.0;tmp(0, 3) = 31.0;tmp(0, 4) = 23.0;
-	tmp(1, 0) = 17.0;tmp(1, 1) = 0.0;tmp(1, 2) = 30.0;tmp(1, 3) = 34.0;tmp(1, 4) = 21.0;
-	tmp(2, 0) = 21.0;tmp(2, 1) = 30.0;tmp(2, 2) = 0.0;tmp(2, 3) = 28.0;tmp(2, 4) = 39.0;
-	tmp(3, 0) = 31.0;tmp(3, 1) = 34.0;tmp(3, 2) = 28.0;tmp(3, 3) = 0.0;tmp(3, 4) = 43.0;
-	tmp(4, 0) = 23.0;tmp(4, 1) = 21.0;tmp(4, 2) = 39.0;tmp(4, 3) = 43.0;tmp(4, 4) = 0.0;
-
-	AgglomerativeClustering(Dt, "average");
 
 	hash_set<ActorSharedPtr> actors;
 	return actors;
 }
 
-void lart::updateDt(Eigen::MatrixXd Dt, Eigen::MatrixXd A0) {
-	UNUSED(Dt);
-	UNUSED(A0);
+std::vector<std::vector<int>> lart::AgglomerativeClustering(Eigen::MatrixXd Dt, std::string Linkage) {
+	UNUSED(Linkage);
 
+	std::vector<std::vector<int>> ids;
+
+	std::vector<int> labels (Dt.rows());
+	std::iota (std::begin(labels), std::end(labels), 0);
+
+	std::vector<int> merges (Dt.rows(), 1);
+
+	Eigen::IOFormat f(Eigen::StreamPrecision, 0, ",", ",", "[", "]", "[", "]");
+	Eigen::MatrixXd tmp(Dt);
+
+
+	for (int i = 0; i < Dt.rows() - 1; i++) {
+		lart::pair result = find_smallest_ix(tmp);
+
+		std::vector<int> v = {labels[result.ix_x], labels[result.ix_y]};
+		std::sort(v.begin(), v.end());
+		ids.push_back(v);
+
+		labels[result.ix_x] = Dt.rows() + i;
+		labels.erase(labels.begin() + result.ix_y);
+
+		average_linkage(tmp, result, merges);
+
+		merges[result.ix_x] = merges[result.ix_x] + merges[result.ix_y];
+		merges.erase(merges.begin() + result.ix_y);
+
+
+
+		removeRow(tmp, result.ix_y);
+		removeColumn(tmp, result.ix_y);
+
+	}
+
+	return ids;
 }
 
-
 lart::pair lart::find_smallest_ix(Eigen::MatrixXd Dt) {
-
 	double smallest = 100;
 	int ix_x = 0;
 	int ix_y = 0;
@@ -73,20 +99,33 @@ lart::pair lart::find_smallest_ix(Eigen::MatrixXd Dt) {
 		}
 	}
 
-	pair result;
+	lart::pair result;
 	result.ix_x = ix_x;
 	result.ix_y = ix_y;
 	result.smallest = smallest;
 	return result;
 }
 
+void lart::average_linkage(Eigen::MatrixXd& Dt, lart::pair p, std::vector<int> merges) {
+	for (int i = 0; i < Dt.rows(); i++) {
+		int x = merges[p.ix_x];
+		int y = merges[p.ix_y];
+
+		Dt(p.ix_x, i) = ((Dt(p.ix_x, i) * x) + (Dt(i, p.ix_y) * y)) / (x + y);
+		Dt(i, p.ix_x) = Dt(p.ix_x, i);
+	}
+}
+
+/* Functions motivated by this answer:
+https://stackoverflow.com/questions/13290395/how-to-remove-a-certain-row-or-column-while-using-eigen-library-c */
+
 void lart::removeRow(Eigen::MatrixXd& matrix, unsigned int rowToRemove)
 {
 	unsigned int numRows = matrix.rows()-1;
 	unsigned int numCols = matrix.cols();
 
-	if( rowToRemove < numRows )
-	    matrix.block(rowToRemove,0,numRows-rowToRemove,numCols) = matrix.block(rowToRemove+1,0,numRows-rowToRemove,numCols);
+	if(rowToRemove < numRows )
+		matrix.block(rowToRemove,0,numRows-rowToRemove,numCols) = matrix.block(rowToRemove+1,0,numRows-rowToRemove,numCols);
 
 	matrix.conservativeResize(numRows,numCols);
 }
@@ -96,75 +135,67 @@ void lart::removeColumn(Eigen::MatrixXd& matrix, unsigned int colToRemove)
 	unsigned int numRows = matrix.rows();
 	unsigned int numCols = matrix.cols()-1;
 
-	if( colToRemove < numCols )
-	    matrix.block(0,colToRemove,numRows,numCols-colToRemove) = matrix.block(0,colToRemove+1,numRows,numCols-colToRemove);
+	if(colToRemove < numCols )
+		matrix.block(0,colToRemove,numRows,numCols-colToRemove) = matrix.block(0,colToRemove+1,numRows,numCols-colToRemove);
 
 	matrix.conservativeResize(numRows,numCols);
 }
 
-void lart::updateDt(Eigen::MatrixXd& Dt, lart::pair p, std::vector<int> merges) {
-	for (int i = 0; i < Dt.rows(); i++) {
-		if (i == p.ix_x || i == p.ix_y) {
-			continue;
-		}
 
-		//int x = merges[p.ix_x];
-		//int y = merges[p.ix_y];
-
-
-		Dt(p.ix_x, i) = ((Dt(p.ix_x, i)) + (Dt(i, p.ix_y))) / 2.0;
-		Dt(i, p.ix_x) = Dt(p.ix_x, i);
-
-	}
-
+void lart::updateDt(Eigen::MatrixXd Dt, Eigen::MatrixXd A0) {
+	UNUSED(Dt);
+	UNUSED(A0);
 }
 
-std::vector<std::vector<int>> lart::AgglomerativeClustering(Eigen::MatrixXd Dt, std::string Linkage) {
 
-	std::vector<std::vector<int>> ids;
+std::vector<lart::cluster> lart::getorder(std::vector<std::vector<int>> x) {
 
-	std::vector<int> labels (Dt.rows());
-	std::iota (std::begin(labels), std::end(labels), 0);
-	std::vector<int> merges (Dt.rows(), 1);
+	std::vector<lart::cluster> clust(x.size() + 1);
 
-	Eigen::IOFormat f(Eigen::StreamPrecision, 0, ",", ",", "[", "]", "[", "]");
-	Eigen::MatrixXd tmp(Dt);
-
-
-	for (int i = 0; i < Dt.rows() - 1; i++) {
-		pair result = find_smallest_ix(tmp);
-
-		std::vector<int> v = {labels[result.ix_x], labels[result.ix_y]};
-		std::sort(v.begin(), v.end());
-		ids.push_back(v);
-
-		labels[result.ix_x] = Dt.rows() + i;
-		labels.erase(labels.begin() + result.ix_y);
-
-
-		updateDt(tmp, result, merges);
-
-		//merges[result.ix_x]++;
-		//merges[result.ix_x] = merges[result.ix_x] + merges[result.ix_y];
-		//merges.erase(merges.begin() + result.ix_y);
-
-
-		removeRow(tmp, result.ix_y);
-		removeColumn(tmp, result.ix_y);
-
+	for (size_t i = 0; i < clust.size(); i++) {
+		cluster c;
+		//c.orig = i;
+		c.id = i;
+		clust[i] = c;
 	}
 
-	for (int i = 0; i < ids.size(); i++) {
-		for (int j = 0; j < ids[i].size(); j++) {
-			std::cout << ids[i][j] << ",";
+	size_t n = clust.size();
+
+	/*for (size_t i = 0; i < n; i++) {
+		if (!clust[x[i][0]].left && !clust[x[i][1]].left) {
+			cluster c;
+			c.id = clust.size();
+			c.left = x[i][0];
+			c.right = x[i][1];
+			clust.push_back(c);
 		}
-		std::cout << std::endl;
-	}
+		if (!clust[x[i][0]].left && clust[x[i][1]].left) {
+			cluster c;
+			c.id = clust.size();
+			c.left = x[i][0];
+			c.right = x[i][1];
+			clust.push_back(c);
+		}
 
+		if (clust[x[i][0]].left && !clust[x[i][1]].left) {
+			cluster c;
+			c.id = clust.size();
+			c.left = x[i][0];
+			c.right = x[i][1];
+			clust.push_back(c);
+		}
 
-	return ids;
-	//map<std::string, >
+		if (clust[x[i][0]].left && clust[x[i][1]].left) {
+			cluster c;
+			c.id = clust.size();
+			c.left = x[i][0];
+			c.right = x[i][1];
+			clust.push_back(c);
+		}
 
+	}*/
+
+	return clust;
 }
 
 
