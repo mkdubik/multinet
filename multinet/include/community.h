@@ -86,17 +86,14 @@ public:
 	*/
 
 	hash_set<ActorSharedPtr> get_ml_community(MLNetworkSharedPtr mnet, uint32_t t, double eps, double gamma);
-
 	std::vector<Eigen::MatrixXd> ml_network2adj_matrix(MLNetworkSharedPtr mnet);
-
-
 
 private:
 
-	struct pair {
-		int ix_x;
-		int ix_y;
-		double smallest;
+	struct dist {
+		int left;
+		int right;
+		double val;
 	};
 
 	struct cluster {
@@ -106,33 +103,36 @@ private:
 		std::vector<int> orig;
 	};
 
+	struct partition {
+		std::vector<int> vals;
+	};
 
 	Eigen::MatrixXd supraA(std::vector<Eigen::MatrixXd> a, double eps);
 	Eigen::MatrixXd block_diag(std::vector<Eigen::MatrixXd> a);
 	Eigen::MatrixXd diagA(Eigen::MatrixXd m);
-	void prcheck(std::vector<Eigen::MatrixXd> a, Eigen::MatrixXd m);
+
 	Eigen::MatrixXd Dmat(Eigen::MatrixXd Pt, Eigen::MatrixXd D, size_t L);
 	Eigen::MatrixXd matrix_power(Eigen::MatrixXd m, uint32_t t);
 	Eigen::MatrixXd pairwise_distance(Eigen::MatrixXd X);
 	Eigen::MatrixXd pairwise_distance(Eigen::MatrixXd X, Eigen::MatrixXd Y);
-	void updateDt(Eigen::MatrixXd Dt, Eigen::MatrixXd A0);
 
-	std::vector<std::vector<int>> AgglomerativeClustering(Eigen::MatrixXd Dt, std::string Linkage);
+	std::vector<lart::cluster> AgglomerativeClustering(Eigen::MatrixXd Dt, Eigen::MatrixXd sA, std::string Linkage);
 
-
-	pair find_smallest_ix(Eigen::MatrixXd Dt);
+	dist find_dist(Eigen::MatrixXd Dt, Eigen::MatrixXd sA);
 
 	void removeRow(Eigen::MatrixXd& matrix, unsigned int rowToRemove);
 	void removeColumn(Eigen::MatrixXd& matrix, unsigned int colToRemove);
-	void average_linkage(Eigen::MatrixXd& Dt, pair p, std::vector<int> merges);
+	void average_linkage(Eigen::MatrixXd& Dt, std::vector<lart::cluster>, dist d);
+
+	vector<double> modMLPX(vector<lart::cluster> x, std::vector<Eigen::MatrixXd> a, Eigen::MatrixXd& sA, double gamma);
+	void modmat(std::vector<Eigen::MatrixXd> a, Eigen::MatrixXd& sA, double gamma);
+
+	vector<lart::partition> get_partition(vector<lart::cluster> clusters, int maxmodix, size_t L, size_t N);
+
+	vector<int> partition2list(vector<lart::partition> parts, size_t L, size_t N);
 
 
-
-	std::vector<lart::cluster> getorder(std::vector<std::vector<int>> children);
 };
-
-
-
 }
 
 #endif /* MULTIPLENETWORK_COMMUNITY_H_ */
