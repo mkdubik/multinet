@@ -5,7 +5,7 @@ set (PROJECT_VENDOR 			"Matteo Magnani")
 set (PROJECT_CONTACT 			"matteo.magnani@it.uu.se")
 set (PROJECT_URL 				"https://github.com/magnanim/multinet")
 set (PROJECT_DESCRIPTION 		"mlnetwork")
-set (CMAKE_BUILD_TYPE 			"Release")
+set (CMAKE_BUILD_TYPE 			"Debug")
 
 file (READ 						"${CMAKE_CURRENT_SOURCE_DIR}/VERSION" PROJECT_VERSION_FULL)
 string (REGEX REPLACE 			"[\n\r]" "" PROJECT_VERSION_FULL "${PROJECT_VERSION_FULL}")
@@ -36,8 +36,8 @@ else()
 endif()
 
 if (CMAKE_COMPILER_IS_GNUCXX)
-	set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall -Wextra -DNDEBUG")
-	set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O4 -fmessage-length=0 -funroll-loops -fsanitize=address -fno-omit-frame-pointer")
+	set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -std=c++11 -Wall -Wextra -DNDEBUG")
+	set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -fmessage-length=0 -funroll-loops -fsanitize=address -fno-omit-frame-pointer")
 
 else()
 	if (CMAKE_COMPILER_IS_CLANGXX)
@@ -68,12 +68,35 @@ else()
 	message (FATAL_ERROR "Doxygen is needed to build the documentation.")
 endif()
 
-add_library (mlnetwork SHARED ${SOURCES})
+include_directories (/usr/include/eigen3)
+
+OPTION(DTRACE "Add dtrace support to target" OFF)
+IF(DTRACE)
+	IF(NOT WIN32)
+		execute_process(COMMAND which dtrace OUTPUT_VARIABLE out)
+		IF (NOT out)
+			message(FATAL_ERROR "dtrace generator not found!")
+		ENDIF()
+
+		execute_process(COMMAND dtrace -h -s include/dtrace_probes.d -o include/dtrace_probes.h)
+
+		if(UNIX AND NOT APPLE)
+			execute_process(COMMAND dtrace -G -s include/dtrace_probes.d -o include/dtrace_probes.o)
+			add_library (mlnetwork SHARED ${SOURCES} include/dtrace_probes.o)
+		ELSE()
+			add_library (mlnetwork SHARED ${SOURCES})
+		ENDIF()
+		ADD_DEFINITIONS(-DUSE_DYNAMIC_TRACE)
+	ENDIF()
+ELSE()
+	add_library (mlnetwork SHARED ${SOURCES})
+ENDIF(DTRACE)
 
 install (TARGETS mlnetwork
 	RUNTIME DESTINATION bin
 	LIBRARY DESTINATION lib
 	ARCHIVE DESTINATION lib)
 
-
 add_subdirectory(test)
+
+
