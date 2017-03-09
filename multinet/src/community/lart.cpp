@@ -1,21 +1,11 @@
 #include "community.h"
-#include <iomanip>
-#include <Eigen/Dense>
 
-#include <algorithm>
-#include <set>
 namespace mlnet {
 
 #define UNUSED(x) (void)(x)
 
-//double (lart::*distance_fptr)(Eigen::MatrixXd Dt);
-
 hash_set<ActorSharedPtr> lart::get_ml_community(
 	MLNetworkSharedPtr mnet, uint32_t t, double eps, double gamma) {
-
-	int prec = 6;
-	std::setprecision(prec);
-	std::cout.precision(prec);
 
 	std::vector<Eigen::MatrixXd> a = ml_network2adj_matrix(mnet);
 	Eigen::MatrixXd A = supraA(a, eps);
@@ -36,14 +26,10 @@ hash_set<ActorSharedPtr> lart::get_ml_community(
 	auto maxmod = std::max_element(std::begin(mod), std::end(mod));
 	int maxmodix = std::distance(std::begin(mod), maxmod);
 
-	vector<lart::partition> parts = get_partition(clusters, maxmodix, L, N);
+	vector<int> partition = get_partition(clusters, maxmodix, L, N);
 
-
-	vector<int> result = partition2list(parts, L, N);
-
-
-	for (size_t i = 0; i < result.size(); i++) {
-		std::cout << result[i] << " ";
+	for (size_t i = 0; i < partition.size(); i++) {
+		std::cout << partition[i] << " ";
 	}
 	std::cout << std::endl;
 
@@ -51,20 +37,13 @@ hash_set<ActorSharedPtr> lart::get_ml_community(
 	return actors;
 }
 
-vector<int> lart::partition2list(vector<lart::partition> parts, size_t L, size_t N) {
-	size_t l = parts.size();
-	size_t n = L * N;
+vector<int> lart::get_partition(vector<lart::cluster> clusters, int maxmodix, size_t L, size_t N) {
 
-	vector<int> result(n);
-	for (size_t i = 0; i < l; i++) {
-		for (size_t j = 0; j < parts[i].vals.size(); j++) {
-			result[parts[i].vals[j]] = i;
-		}
-	}
-	return result;
-}
+	struct partition {
+		std::vector<int> vals;
+	};
 
-vector<lart::partition> lart::get_partition(vector<lart::cluster> clusters, int maxmodix, size_t L, size_t N) {
+
 	vector<partition> parts;
 	partition p;
 	p.vals.resize(L * N);
@@ -72,10 +51,7 @@ vector<lart::partition> lart::get_partition(vector<lart::cluster> clusters, int 
 	parts.push_back(p);
 
 	for (size_t i = L * N; i < L * N + maxmodix; i++) {
-		int v1 = clusters[i].left;
-		int v2 = clusters[i].right;
-
-		vector<int> tmp = {v1, v2};
+		vector<int> tmp = {clusters[i].left, clusters[i].right};
 		vector<int> out;
 
 		std::set_symmetric_difference (
@@ -92,16 +68,22 @@ vector<lart::partition> lart::get_partition(vector<lart::cluster> clusters, int 
 	vector<partition> r;
 	vector<int> val = parts[parts.size() - 1].vals;
 
-	std::cout << clusters[val[val.size() - 1]].id << std::endl;
-
 	for (size_t i = 0; i < val.size(); i++) {
 		partition pp;
-		std::cout << val[i] << std::endl;
 		pp.vals = clusters[val[i]].orig;
 		r.push_back(pp);
 	}
 
-	return r;
+	size_t l = r.size();
+	size_t n = L * N;
+
+	vector<int> result(n);
+	for (size_t i = 0; i < l; i++) {
+		for (size_t j = 0; j < r[i].vals.size(); j++) {
+			result[r[i].vals[j]] = i;
+		}
+	}
+	return result;
 }
 
 vector<double> lart::modMLPX(vector<lart::cluster> clusters, std::vector<Eigen::MatrixXd> a, Eigen::MatrixXd& sA, double gamma) {
@@ -110,15 +92,12 @@ vector<double> lart::modMLPX(vector<lart::cluster> clusters, std::vector<Eigen::
 	size_t L = a.size();
 	size_t N = a[0].rows();
 
-
 	modmat(a, sA, gamma);
 
 	r.push_back(sA.diagonal().array().sum());
 
-	std::cout << sA.rows() << " " <<sA.cols() << std::endl;
 
 	for (size_t i = N*L; i < clusters.size(); i++) {
-
 		cluster data = clusters[i];
 
 		vector<int> v1 = clusters[data.left].orig;
@@ -212,8 +191,9 @@ std::vector<lart::cluster> lart::AgglomerativeClustering(Eigen::MatrixXd Dt, Eig
 		/* Update the distance matrix */
 		average_linkage(tmp, clusters, d);
 		/* Remove the merged node from the distance matrix */
-		removeRow(tmp, d.right);
-		removeColumn(tmp, d.right);
+		removeEntry(tmp, d.right);
+		//removeRow(tmp, d.right);
+		//removeColumn(tmp, d.right);
 
 		/* Update labels. If 0 merges with 10, we remove 10 from the pool and merge with 0 and it becomes cluster number 11 */
 		labels[d.left] = Dt.rows() + i;
@@ -253,33 +233,25 @@ void lart::average_linkage(Eigen::MatrixXd& Dt, std::vector<lart::cluster> clust
 	}
 }
 
-/* Functions motivated by this answer:
-https://stackoverflow.com/questions/13290395/how-to-remove-a-certain-row-or-column-while-using-eigen-library-c */
-
-void lart::removeRow(Eigen::MatrixXd& matrix, unsigned int rowToRemove)
+void lart::removeEntry(Eigen::MatrixXd& matrix, unsigned int entryToRemove)
 {
-	unsigned int numRows = matrix.rows()-1;
+	// TODO: Is it possible to only call conservativeResize once and remove row + column?
+	unsigned int numRows = matrix.rows() - 1;
 	unsigned int numCols = matrix.cols();
 
-	if(rowToRemove < numRows )
-		matrix.block(rowToRemove,0,numRows-rowToRemove,numCols) = matrix.block(rowToRemove+1,0,numRows-rowToRemove,numCols);
+	if(entryToRemove < numRows ){
+		matrix.block(entryToRemove,0,numRows-entryToRemove,numCols) = matrix.block(entryToRemove+1,0,numRows-entryToRemove,numCols);
+	}
+
+	matrix.conservativeResize(numRows,numCols);
+
+	numCols -= 1;
+	if(entryToRemove < numCols ) {
+		matrix.block(0,entryToRemove,numRows,numCols-entryToRemove) = matrix.block(0,entryToRemove+1,numRows,numCols-entryToRemove);
+	}
 
 	matrix.conservativeResize(numRows,numCols);
 }
-
-void lart::removeColumn(Eigen::MatrixXd& matrix, unsigned int colToRemove)
-{
-	unsigned int numRows = matrix.rows();
-	unsigned int numCols = matrix.cols()-1;
-
-	if(colToRemove < numCols )
-		matrix.block(0,colToRemove,numRows,numCols-colToRemove) = matrix.block(0,colToRemove+1,numRows,numCols-colToRemove);
-
-	matrix.conservativeResize(numRows,numCols);
-}
-
-
-
 
 
 std::vector<Eigen::MatrixXd> lart::ml_network2adj_matrix(MLNetworkSharedPtr mnet) {
@@ -378,7 +350,8 @@ Eigen::MatrixXd lart::Dmat(Eigen::MatrixXd Pt, Eigen::MatrixXd D, size_t L) {
 	Eigen::MatrixXd Dmat = 	Eigen::MatrixXd::Zero(N * L, N * L);
 
 	for (size_t i = 0; i < L; ++i) {
-		auto m = pairwise_distance(newP.block(i * N, 0, N, N * L));
+		auto X = newP.block(i * N, 0, N, N * L);
+		auto m = pairwise_distance(X, X);
 		for (int j = 0; j < m.rows(); j++) {
 			for (int k = 0; k < m.cols(); k++) {
 				Dmat(j + (i * N), k + (i * N)) = m(j, k);
@@ -408,20 +381,6 @@ Eigen::MatrixXd lart::Dmat(Eigen::MatrixXd Pt, Eigen::MatrixXd D, size_t L) {
 		}
 	}
 	return Dmat;
-}
-
-Eigen::MatrixXd lart::pairwise_distance(Eigen::MatrixXd X) {
-
-	Eigen::MatrixXd XX = (X.array() * X.array()).rowwise().sum();
-	Eigen::MatrixXd YY = XX.transpose();
-	Eigen::MatrixXd distances = (X * X.transpose()).unaryExpr([](const double x) { return x * -2;});
-
-	for (int i = 0; i < distances.rows(); i++) {
-		distances.col(i).array() += XX.array();
-		distances.row(i).array() += YY.array();
-		distances(i, i) = 0.0;
-	}
-	return distances.array().sqrt();
 }
 
 Eigen::MatrixXd lart::pairwise_distance(Eigen::MatrixXd X, Eigen::MatrixXd Y) {
