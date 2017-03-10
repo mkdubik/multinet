@@ -1,0 +1,17 @@
+global timestamp /* construct to hold temporary timestamps */
+
+
+probe process("libmlnetwork.so").mark("ml2am__start")
+{
+    timestamp = gettimeofday_ns();
+}
+
+probe process("libmlnetwork.so").mark("ml2am__end")
+{
+    timestamp = gettimeofday_ns() - timestamp;
+}
+
+probe end
+{
+  printf("Converted network to dense adjacency matrix in %d nano-seconds\n", timestamp);
+}
