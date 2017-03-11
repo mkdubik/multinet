@@ -7,7 +7,9 @@ namespace mlnet {
 hash_set<ActorSharedPtr> lart::get_ml_community(
 	MLNetworkSharedPtr mnet, uint32_t t, double eps, double gamma) {
 
-	std::vector<Eigen::MatrixXd> a = ml_network2adj_matrix(mnet);
+	std::vector<Eigen::SparseMatrix<double>> a = ml_network2adj_matrix(mnet);
+
+	/*
 	Eigen::MatrixXd A = supraA(a, eps);
 
 	size_t L = a.size();
@@ -31,10 +33,38 @@ hash_set<ActorSharedPtr> lart::get_ml_community(
 	for (size_t i = 0; i < partition.size(); i++) {
 		std::cout << partition[i] << " ";
 	}
-	std::cout << std::endl;
+	std::cout << std::endl;*/
 
 	hash_set<ActorSharedPtr> actors;
 	return actors;
+}
+
+std::vector<Eigen::SparseMatrix<double>> lart::ml_network2adj_matrix(MLNetworkSharedPtr mnet) {
+
+	DTRACE0(ML2AM_START);
+
+	std::cout << "Starting matrix population" << std::endl;
+	size_t N = mnet->get_layers()->size();
+	size_t M = mnet->get_actors()->size();
+
+	std::vector<Eigen::SparseMatrix<double>> adj(N);
+
+	for (LayerSharedPtr l: *mnet->get_layers()) {
+		Eigen::SparseMatrix<double> m = Eigen::SparseMatrix<double> (M, M);
+		m.reserve(Eigen::VectorXi::Constant(M, M));
+
+		for (EdgeSharedPtr e: *mnet->get_edges(l, l)) {
+			int v1_id = e->v1->actor->id;
+			int v2_id = e->v2->actor->id;
+			m.insert(v1_id - 1, v2_id - 1) = 1;
+			m.insert(v2_id - 1, v1_id - 1) = 1;
+		}
+		adj[l->id - 1] = m;
+	}
+
+	std::cout << "Done " << std::endl;
+	DTRACE0(ML2AM_END);
+	return adj;
 }
 
 vector<int> lart::get_partition(vector<lart::cluster> clusters, int maxmodix, size_t L, size_t N) {
@@ -250,31 +280,6 @@ void lart::removeEntry(Eigen::MatrixXd& matrix, unsigned int entryToRemove)
 	}
 
 	matrix.conservativeResize(numRows,numCols);
-}
-
-
-std::vector<Eigen::MatrixXd> lart::ml_network2adj_matrix(MLNetworkSharedPtr mnet) {
-
-	DTRACE0(ML2AM_START);
-	size_t N = mnet->get_layers()->size();
-	size_t M = mnet->get_actors()->size();
-
-	std::vector<Eigen::MatrixXd> adj(N);
-
-	for (LayerSharedPtr l: *mnet->get_layers()) {
-		Eigen::MatrixXd m = Eigen::MatrixXd::Zero(M, M);
-
-		for (EdgeSharedPtr e: *mnet->get_edges(l, l)) {
-			int v1_id = e->v1->actor->id;
-			int v2_id = e->v2->actor->id;
-			m(v1_id - 1, v2_id - 1) = 1;
-			m(v2_id - 1, v1_id - 1) = 1;
-		}
-		adj[l->id - 1] = m;
-	}
-
-	DTRACE0(ML2AM_END);
-	return adj;
 }
 
 Eigen::MatrixXd lart::block_diag(std::vector<Eigen::MatrixXd> a) {

@@ -1,12 +1,12 @@
 global timestamp /* construct to hold temporary timestamps */
 
 
-probe process("libmlnetwork.so").mark("ml2am__start")
+probe process("libmultinet.so").mark("ml2am__start")
 {
     timestamp = gettimeofday_ns();
 }
 
-probe process("libmlnetwork.so").mark("ml2am__end")
+probe process("libmultinet.so").mark("ml2am__end")
 {
     timestamp = gettimeofday_ns() - timestamp;
 }

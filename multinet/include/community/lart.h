@@ -1,6 +1,9 @@
-#include <Eigen/Dense>
-#include "dtrace.h"
 #include "datastructures.h"
+#include "dtrace.h"
+
+#include <Eigen/Sparse>
+#include <Eigen/Dense>
+
 
 namespace mlnet {
 
@@ -25,7 +28,7 @@ public:
 		Post: a is a list of Matrixes that is the adjacency matrix of mnet.
 			Each matrix represents one layer
 	*/
-	std::vector<Eigen::MatrixXd> ml_network2adj_matrix(MLNetworkSharedPtr mnet);
+	std::vector<Eigen::SparseMatrix<double>> ml_network2adj_matrix(MLNetworkSharedPtr mnet);
 
 private:
 

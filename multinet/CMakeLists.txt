@@ -37,7 +37,7 @@ endif()
 
 if (CMAKE_COMPILER_IS_GNUCXX)
 	set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -std=c++11 -Wall -Wextra -DNDEBUG")
-	set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -ggdb")
+	set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O2 ")
 
 else()
 	if (CMAKE_COMPILER_IS_CLANGXX)
