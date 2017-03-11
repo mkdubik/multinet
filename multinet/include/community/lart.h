@@ -1,5 +1,8 @@
 #include <Eigen/Dense>
 #include "dtrace.h"
+#include "datastructures.h"
+
+namespace mlnet {
 
 class lart {
 
@@ -160,3 +163,5 @@ private:
 
 
 };
+
+}

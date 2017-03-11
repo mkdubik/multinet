@@ -43,7 +43,6 @@ vector<int> lart::get_partition(vector<lart::cluster> clusters, int maxmodix, si
 		std::vector<int> vals;
 	};
 
-
 	vector<partition> parts;
 	partition p;
 	p.vals.resize(L * N);
@@ -362,11 +361,11 @@ Eigen::MatrixXd lart::Dmat(Eigen::MatrixXd Pt, Eigen::MatrixXd D, size_t L) {
 	for (size_t i = 0; i  < L - 1; ++i) {
 		for (size_t j = i + 1; j < L; ++j) {
 			if (i != j) {
-				auto newx = newP.block(i * N, i * N, (i+1)*N, (i+1)*N);
-				auto newy = newP.block(j * N, j * N, (i+1)*N, (i+1)*N);
+				auto newx = newP.block(i * N, i * N, N, N);
+				auto newy = newP.block(j * N, j * N, N, N);
 
-				auto tnewx = newP.block(j * N, i * N, (i+1)*N, (i+1)*N);
-				auto tnewy = newP.block(i * N, j * N, (i+1)*N, (i+1)*N);
+				auto tnewx = newP.block(j * N, i * N, N, N);
+				auto tnewy = newP.block(i * N, j * N, N, N);
 
 				Eigen::MatrixXd m1(newx.rows(), newx.cols()+tnewy.cols());
 				Eigen::MatrixXd m2(newy.rows(), newy.cols()+tnewx.cols());
@@ -375,8 +374,8 @@ Eigen::MatrixXd lart::Dmat(Eigen::MatrixXd Pt, Eigen::MatrixXd D, size_t L) {
 				m2 << newy,tnewx;
 
 				auto dmat = pairwise_distance(m1, m2);
-				Dmat.block(i * N, (i+1)*N, (i+1)*N, (i+1)*N) = dmat;
-				Dmat.block((i+1)*N, i * N, (i+1)*N, (i+1)*N) = dmat.transpose();
+				Dmat.block(i * N, (i+1)*N, N, N) = dmat;
+				Dmat.block((i+1)*N, i * N, N, N) = dmat.transpose();
 			}
 		}
 	}

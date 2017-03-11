@@ -34,11 +34,11 @@ namespace mlnet {
 
     typedef std::shared_ptr<communities> CommunitiesSharedPtr;
 
+}
+
 /* ALGORITHMS */
 #include "community/lart.h"
 
-
-}
 
 #endif /* MULTIPLENETWORK_COMMUNITY_H_ */
 
