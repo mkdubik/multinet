@@ -72,7 +72,7 @@ private:
 			on the off diagonal blocks.
 
 	*/
-	Eigen::MatrixXd supraA(std::vector<Eigen::MatrixXd> a, double eps);
+	Eigen::SparseMatrix<double> supraA(std::vector<Eigen::SparseMatrix<double>> a, double eps);
 
 	/*
 		Use: auto m = block_diag(a);
@@ -80,7 +80,7 @@ private:
 		Post: m is a a.size() * a[i].size() matrix, with the matrix contents of a
 			stacked diagonally
 	*/
-	Eigen::MatrixXd block_diag(std::vector<Eigen::MatrixXd> a);
+	Eigen::SparseMatrix<double> block_diag(std::vector<Eigen::SparseMatrix<double>> a);
 
 	/*
 		Use: auto D = diagA(m);
@@ -88,28 +88,28 @@ private:
 		Post: D is NL x NL diagonal matrix defined by the multiplex node degrees
 
 	*/
-	Eigen::MatrixXd diagA(Eigen::MatrixXd m);
-
-	/*
-		Use: auto A = Dmat(Pt, D, L);
-		Pre: Pt (?)
-		Post:
-	*/
-	Eigen::MatrixXd Dmat(Eigen::MatrixXd Pt, Eigen::MatrixXd D, size_t L);
+	Eigen::SparseMatrix<double> diagA(Eigen::SparseMatrix<double> m);
 
 	/*
 		Use: auto M = matrix_power(m, t);
 		Pre: m is a matrix, t is an unsigned 32bit integer
 		Post: M is a new matrix that is m raised to the power of t
 	*/
-	Eigen::MatrixXd matrix_power(Eigen::MatrixXd m, uint32_t t);
+	Eigen::SparseMatrix<double> matrix_power(Eigen::SparseMatrix<double> m, uint32_t t);
+
+	/*
+		Use: auto A = Dmat(Pt, D, L);
+		Pre: Pt (?)
+		Post:
+	*/
+	Eigen::SparseMatrix<double> Dmat(Eigen::SparseMatrix<double> Pt, Eigen::SparseMatrix<double> D, size_t L);
 
 	/*
 		Use: auto p = pairwise_distance(X, Y);
 		Pre: X and Y are matrices (they may be the same objects)
 		Post: p contains euclidean distances between pairs of X and Y
 	*/
-	Eigen::MatrixXd pairwise_distance(Eigen::MatrixXd X, Eigen::MatrixXd Y);
+	Eigen::SparseMatrix<double> pairwise_distance(Eigen::SparseMatrix<double> X, Eigen::SparseMatrix<double> Y);
 
 	/*
 		Use: auto clusters = AgglomerativeClustering(Dt, sA, Linkage);
