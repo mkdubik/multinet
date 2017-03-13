@@ -111,6 +111,9 @@ private:
 	*/
 	Eigen::SparseMatrix<double> pairwise_distance(Eigen::SparseMatrix<double> X, Eigen::SparseMatrix<double> Y);
 
+	Eigen::SparseMatrix<double> pairwise_distance_sum(Eigen::SparseMatrix<double> X);
+
+
 	/*
 		Use: auto clusters = AgglomerativeClustering(Dt, sA, Linkage);
 		Pre: Dt is a distance matrix

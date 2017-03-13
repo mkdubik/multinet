@@ -11,10 +11,10 @@ void test_lart() {
 
 	lart k;
 	//MLNetworkSharedPtr mnet3 = read_multilayer("/home/mikki/Downloads/toy.mpx","toy",',');
-	MLNetworkSharedPtr mnet2 = read_multilayer("/home/mikki/Downloads/toy2.mpx","toy",',');
-	//MLNetworkSharedPtr mnet3 = read_multilayer("/home/mikki/Downloads/friendfeed_ita.mpx","sample",',');
-	uint32_t t = 9;
-	double eps = 0.8;
+	//MLNetworkSharedPtr mnet2 = read_multilayer("/home/mikki/Downloads/toy2.mpx","toy",',');
+	MLNetworkSharedPtr mnet2 = read_multilayer("/home/mikki/Downloads/friendfeed_ita.mpx","sample",',');
+	uint32_t t = 3;
+	double eps = 1;
 	float gamma = 1;
 
 	k.get_ml_community(mnet2, t, eps, gamma);
