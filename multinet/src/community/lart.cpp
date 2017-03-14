@@ -117,14 +117,7 @@ Eigen::SparseMatrix<double> lart::supraA(std::vector<Eigen::SparseMatrix<double>
 
 	for (size_t i = 0; i  < L - 1; ++i) {
 		for (size_t j = i + 1; j < L; ++j) {
-			Eigen::SparseMatrix<double> tmp = a[i].cwiseProduct(a[j]);
-
-			std::vector<double> d (a[i].rows(), 0);
-			for (int j = 0; j < tmp.outerSize(); j++) {
-				for (Eigen::SparseMatrix<double>::InnerIterator it(tmp, j); it; ++it) {
-					d[it.row()] += it.value();
-				}
-			}
+			Eigen::RowVectorXd d = sum(a[i].cwiseProduct(a[j]), 1);
 
 			std::vector<Eigen::Triplet<double>> tlist;
 			tlist.reserve(a[i].rows());
@@ -139,7 +132,7 @@ Eigen::SparseMatrix<double> lart::supraA(std::vector<Eigen::SparseMatrix<double>
 			int ix_b = (i + 1) * N;
 
 			for (int k = 0; k < a[i].rows(); k++) {
-				double intra = d[k] + eps;
+				double intra = d(k) + eps;
 				tlist.push_back(Eigen::Triplet<double>(ix_a + k, ix_b + k, intra));
 				tlist.push_back(Eigen::Triplet<double>(ix_b + k, ix_a + k, intra));
 			}
@@ -157,12 +150,7 @@ Eigen::SparseMatrix<double> lart::diagA(Eigen::SparseMatrix<double> A) {
 	Eigen::SparseMatrix<double> dA = Eigen::SparseMatrix<double>(A.rows(), A.cols());
 	dA.reserve(Eigen::VectorXi::Constant(A.rows() / 2, A.rows() / 2));
 
-	std::vector<double> d (A.rows(), 0);
-	for (int j = 0; j < A.outerSize(); j++) {
-		for (Eigen::SparseMatrix<double>::InnerIterator it(A, j); it; ++it) {
-			d[it.col()] += it.value();
-		}
-	}
+	Eigen::RowVectorXd d = sum(A, 1);
 
 	std::vector<Eigen::Triplet<double>> tlist;
 	tlist.reserve(A.rows());
@@ -174,28 +162,28 @@ Eigen::SparseMatrix<double> lart::diagA(Eigen::SparseMatrix<double> A) {
 	return dA;
 }
 
-Eigen::SparseMatrix<double> lart::Dmat(Eigen::SparseMatrix<double> Dt, Eigen::SparseMatrix<double> Pt, size_t L) {
+Eigen::SparseMatrix<double> lart::Dmat(Eigen::SparseMatrix<double> Pt, Eigen::SparseMatrix<double> dA, size_t L) {
+	// NOTE: dA side effect
 
-	std::vector<Eigen::Triplet<double>> tlist;
-	tlist.reserve(Dt.rows());
-	Eigen::SparseMatrix<double> Dt_sqrt = Eigen::SparseMatrix<double>(Dt.rows(), Dt.cols());
+	std::cout << " Getting SQRT of dA..." << std::endl;
 
-	for (int j = 0; j < Dt.outerSize(); j++) {
-		for (Eigen::SparseMatrix<double>::InnerIterator it(Dt, j); it; ++it) {
-			tlist.push_back(Eigen::Triplet<double>(it.row(), it.col(), std::sqrt(it.value())));
+	for (int j = 0; j < dA.outerSize(); j++) {
+		for (Eigen::SparseMatrix<double>::InnerIterator it(dA, j); it; ++it) {
+			dA.coeffRef(it.row(), it.col()) = std::sqrt(it.value());
 		}
 	}
-	Dt_sqrt.setFromTriplets(tlist.begin(), tlist.end());
-	Eigen::SparseMatrix<double> newP = Pt * Dt_sqrt;
-	Eigen::SparseMatrix<double> Dmat = Eigen::SparseMatrix<double>(Dt.rows(), Dt.cols());
-	Dmat.reserve(Eigen::VectorXi::Constant(Dt.rows() / 2, Dt.rows() / 2));
 
+	std::cout << " Done with SQRT" << std::endl;
+
+	Eigen::SparseMatrix<double> newP = Pt * dA;
+
+	Eigen::SparseMatrix<double> Dmat = Eigen::SparseMatrix<double>(dA.rows(), dA.cols());
+	Dmat.reserve(Eigen::VectorXi::Constant(dA.rows() / 2, dA.rows() / 2));
 	size_t N = Pt.rows() / L;
 
 	for (size_t i = 0; i < L; ++i) {
 		auto X = newP.block(i * N, 0, N, N * L);
-		//auto m = pairwise_distance(X, X);
-
+		auto m = pairwise_distance(X, X);
 
 		/*for (int j = 0; j < m.rows(); j++) {
 			for (int k = 0; k < m.cols(); k++) {
@@ -231,16 +219,19 @@ Eigen::SparseMatrix<double> lart::Dmat(Eigen::SparseMatrix<double> Dt, Eigen::Sp
 
 Eigen::SparseMatrix<double> lart::pairwise_distance(Eigen::SparseMatrix<double> X, Eigen::SparseMatrix<double> Y) {
 
-	Eigen::SparseMatrix<double> XX = pairwise_distance_sum(X);
+	Eigen::RowVectorXd XX = sum(X.cwiseProduct(X), 0);
+	Eigen::RowVectorXd YY = sum(Y.cwiseProduct(Y), 0).transpose();
 
-	//std::cout << XX <<  std::endl;
-	/*Eigen::SparseMatrix<double> YY = pairwise_distance_sum(Y).transpose();
 	Eigen::SparseMatrix<double> distances = (X * Y.transpose()).unaryExpr([](const double x) { return x * -2;});
 
-
-
 	for (int i = 0; i < distances.rows(); i++) {
+		//distances.col(i) += YY;
 
+		//for (int j = 0; j < distances.cols(); i++) {
+			//dA.coeffRef(it.row(), it.col()) = std::sqrt(it.value());
+		//}
+	}
+		/*
 		std::vector<Eigen::Triplet<double>> tlistCol; tlistCol.reserve(X.rows());
 		for (int j = 0; j < distances.cols(); j++) {
 			tlistCol.push_back(Eigen::Triplet<double>(j, i, distances.coeffRef(j, i) + XX.coeffRef(j, 0)));
@@ -256,23 +247,10 @@ Eigen::SparseMatrix<double> lart::pairwise_distance(Eigen::SparseMatrix<double> 
 		//distances.col(i).array() += XX.array();
 		//distances.row(i).array() += YY.array();
 		//distances.insert(i, i) = 0.0;
-
-	}*/
-
-
-	/*return distances.array().sqrt();*/
-	return XX;
-}
+	}
 
 
-
-Eigen::SparseMatrix<double> lart::pairwise_distance_sum(Eigen::SparseMatrix<double> X) {
-	Eigen::SparseMatrix<double> tmp = X * X;
-
-	//std::cout << "tmp " << tmp << std::endl;
-	//std::cout << tmp.rows() << " " << tmp.cols() << std::endl;
-
-	Eigen::SparseMatrix<double> XX = Eigen::SparseMatrix<double> (tmp.rows(), 1);
+	std::cout << std::endl;
 
 	std::vector<double> tmp1(X.rows(), 0);
 	for (int j = 0; j < tmp.outerSize(); j++) {
@@ -286,8 +264,32 @@ Eigen::SparseMatrix<double> lart::pairwise_distance_sum(Eigen::SparseMatrix<doub
 	for (unsigned int j = 0; j < tmp1.size(); j++) {
 		tlist.push_back(Eigen::Triplet<double>(j, 1, tmp1[j]));
 	}
-	XX.setFromTriplets(tlist.begin(), tlist.end());
-	return XX;
+	XX.setFromTriplets(tlist.begin(), tlist.end());*/
+
+
+	/*Eigen::SparseMatrix<double> YY = pairwise_distance_sum(Y).transpose();
+
+
+
+
+	return distances.array().sqrt();*/
+}
+
+
+Eigen::RowVectorXd lart::sum(Eigen::SparseMatrix<double> X, int axis) {
+
+	Eigen::RowVectorXd d (X.rows());
+
+	for (int i = 0; i < X.outerSize(); i++) {
+		for (Eigen::SparseMatrix<double>::InnerIterator it(X, i); it; ++it) {
+			if (axis){
+				d(it.col()) += it.value();
+			} else {
+				d(it.row()) += it.value();
+			}
+		}
+	}
+	return d;
 }
 
 
@@ -516,13 +518,11 @@ Eigen::SparseMatrix<double> lart::matrix_power(Eigen::SparseMatrix<double> m, ui
 		return A;
 	}
 
-	std::cout << "Starting power" << std::endl;
 	Eigen::SparseMatrix<double> Dt(m);
-
 	for (uint32_t i = 1; i < t; i++) {
-		std::cout << "Non zero before: " << Dt.nonZeros() << " " << Dt.rows() << " " << Dt.cols() << std::endl;
-		Dt = Dt * m;
-		std::cout << "Non zero after: " << Dt.nonZeros() << " " <<  Dt.rows() << " " << Dt.cols() << std::endl;
+		// TODO Write more and consider the pruning
+		Dt = (Dt * m).pruned(0.001, 10);
+		Dt.makeCompressed();
 	}
 	return Dt;
 }

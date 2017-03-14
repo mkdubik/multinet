@@ -111,7 +111,7 @@ private:
 	*/
 	Eigen::SparseMatrix<double> pairwise_distance(Eigen::SparseMatrix<double> X, Eigen::SparseMatrix<double> Y);
 
-	Eigen::SparseMatrix<double> pairwise_distance_sum(Eigen::SparseMatrix<double> X);
+	Eigen::RowVectorXd sum(Eigen::SparseMatrix<double> X, int axis);
 
 
 	/*
