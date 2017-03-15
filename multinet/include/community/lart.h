@@ -95,21 +95,21 @@ private:
 		Pre: m is a matrix, t is an unsigned 32bit integer
 		Post: M is a new matrix that is m raised to the power of t
 	*/
-	Eigen::SparseMatrix<double> matrix_power(Eigen::SparseMatrix<double> m, uint32_t t);
+	Eigen::MatrixXd matrix_power(Eigen::MatrixXd m, uint32_t t);
 
 	/*
 		Use: auto A = Dmat(Pt, D, L);
 		Pre: Pt (?)
 		Post:
 	*/
-	Eigen::SparseMatrix<double> Dmat(Eigen::SparseMatrix<double> Pt, Eigen::SparseMatrix<double> D, size_t L);
+	Eigen::MatrixXd Dmat(Eigen::SparseMatrix<double> Pt, Eigen::SparseMatrix<double> D, size_t L);
 
 	/*
 		Use: auto p = pairwise_distance(X, Y);
 		Pre: X and Y are matrices (they may be the same objects)
 		Post: p contains euclidean distances between pairs of X and Y
 	*/
-	Eigen::SparseMatrix<double> pairwise_distance(Eigen::SparseMatrix<double> X, Eigen::SparseMatrix<double> Y);
+	Eigen::MatrixXd pairwise_distance(Eigen::MatrixXd X, Eigen::MatrixXd Y);
 
 	Eigen::RowVectorXd sum(Eigen::SparseMatrix<double> X, int axis);
 
@@ -152,10 +152,10 @@ private:
 	*/
 	void average_linkage(Eigen::MatrixXd& Dt, std::vector<lart::cluster> clusters, dist d);
 
+	vector<double> modMLPX(vector<lart::cluster> x, std::vector<Eigen::SparseMatrix<double>> a,
+		Eigen::SparseMatrix<double> &sA, double gamma);
 
-
-	vector<double> modMLPX(vector<lart::cluster> x, std::vector<Eigen::MatrixXd> a, Eigen::MatrixXd& sA, double gamma);
-	void modmat(std::vector<Eigen::MatrixXd> a, Eigen::MatrixXd& sA, double gamma);
+	void modmat(std::vector<Eigen::SparseMatrix<double>> a, Eigen::SparseMatrix<double>& sA, double gamma);
 
 	/*
 		Use: auto p = get_partition(clusters, maxmodix, L, N);
