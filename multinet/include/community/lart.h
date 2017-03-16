@@ -111,7 +111,7 @@ private:
 	*/
 	Eigen::MatrixXd pairwise_distance(Eigen::MatrixXd X, Eigen::MatrixXd Y);
 
-	Eigen::RowVectorXd sum(Eigen::SparseMatrix<double> X, int axis);
+	Eigen::MatrixXd sum(Eigen::SparseMatrix<double> X, int axis);
 
 
 	/*
@@ -123,7 +123,7 @@ private:
 			NOTE: This implementation will only join clusters that are connected
 			Linkage dictates what measure to use. For now only average distance is available
 	*/
-	std::vector<lart::cluster> AgglomerativeClustering(Eigen::MatrixXd Dt, Eigen::MatrixXd sA, std::string Linkage);
+	std::vector<lart::cluster> AgglomerativeClustering(Eigen::MatrixXd Dt, Eigen::SparseMatrix<double> sA, std::string Linkage);
 
 	/*
 		Use: auto d = find_dist(Dt, sA);
@@ -131,7 +131,7 @@ private:
 			sA is the connectivity matrix of Dt
 		Post: dist is the smallest distance of nodes in Dt that is not 0 and are connected
 	*/
-	lart::dist find_dist(Eigen::MatrixXd Dt, Eigen::MatrixXd sA);
+	lart::dist find_dist(Eigen::MatrixXd Dt, Eigen::SparseMatrix<double> sA);
 
 	/*
 		Use: removeEntry(m, ix);
@@ -153,9 +153,10 @@ private:
 	void average_linkage(Eigen::MatrixXd& Dt, std::vector<lart::cluster> clusters, dist d);
 
 	vector<double> modMLPX(vector<lart::cluster> x, std::vector<Eigen::SparseMatrix<double>> a,
-		Eigen::SparseMatrix<double> &sA, double gamma);
+		double gamma, Eigen::SparseMatrix<double> sA);
 
-	void modmat(std::vector<Eigen::SparseMatrix<double>> a, Eigen::SparseMatrix<double>& sA, double gamma);
+	void modmat(std::vector<Eigen::SparseMatrix<double>> a, double gamma,
+		Eigen::SparseMatrix<double>& sA);
 
 	/*
 		Use: auto p = get_partition(clusters, maxmodix, L, N);

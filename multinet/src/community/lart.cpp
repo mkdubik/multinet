@@ -21,21 +21,25 @@ hash_set<ActorSharedPtr> lart::get_ml_community(
 	//Eigen::IOFormat f(Eigen::StreamPrecision, 0, ", ", ",", "[", "]", "[", "]");
 
 	Eigen::SparseMatrix<double> sA = supraA(a, eps);
-	Eigen::SparseMatrix<double> sA0 = supraA(a, 0);
 	Eigen::SparseMatrix<double> dA = diagA(sA);
-
-
-
 	Eigen::SparseMatrix<double> aP = dA * sA;
 
 	Eigen::MatrixXd Pt = matrix_power(Eigen::MatrixXd(aP), t);
 	Eigen::MatrixXd Dt = Dmat(Pt.sparseView(), dA, a.size());
-	std::vector<lart::cluster> clusters = AgglomerativeClustering(Dt, sA, "average");
 
-	vector<double> mod = modMLPX(clusters, a, sA, gamma);
-	std::cout << "hi " << std::endl;
+	Eigen::SparseMatrix<double> sA0 = supraA(a, 0);
+	std::vector<lart::cluster> clusters = AgglomerativeClustering(Dt, sA0, "average");
+
+	vector<double> mod = modMLPX(clusters, a, gamma, sA0);
 	auto maxmod = std::max_element(std::begin(mod), std::end(mod));
 	int maxmodix = std::distance(std::begin(mod), maxmod);
+
+	for (int i = 0; i < clusters.size(); i++) {
+		for (int j = 0; j < clusters[i].orig.size(); j++) {
+			std::cout << clusters[i].orig[j] << ", ";
+		}
+		std::cout << std::endl;
+	}
 
 	vector<int> partition = get_partition(clusters, maxmodix, a.size(), a[0].size());
 
@@ -110,22 +114,21 @@ Eigen::SparseMatrix<double> lart::supraA(std::vector<Eigen::SparseMatrix<double>
 
 	for (size_t i = 0; i  < L - 1; ++i) {
 		for (size_t j = i + 1; j < L; ++j) {
-			Eigen::RowVectorXd d = sum(a[i].cwiseProduct(a[j]), 1);
+			Eigen::MatrixXd d = sum(a[i].cwiseProduct(a[j]), 1);
 
 			std::vector<Eigen::Triplet<double>> tlist;
 			tlist.reserve(a[i].rows());
 
-			for (int j = 0; j < A.outerSize(); j++) {
-				for (Eigen::SparseMatrix<double>::InnerIterator it(A, j); it; ++it) {
+			for (int k = 0; k < A.outerSize(); k++) {
+				for (Eigen::SparseMatrix<double>::InnerIterator it(A, k); it; ++it) {
 					tlist.push_back(Eigen::Triplet<double>(it.row(), it.col(), it.value()));
 				}
 			}
-
 			int ix_a = i * N;
 			int ix_b = (i + 1) * N;
 
 			for (int k = 0; k < a[i].rows(); k++) {
-				double intra = d(k) + eps;
+				double intra = d(k, 0) + eps;
 				tlist.push_back(Eigen::Triplet<double>(ix_a + k, ix_b + k, intra));
 				tlist.push_back(Eigen::Triplet<double>(ix_b + k, ix_a + k, intra));
 			}
@@ -143,13 +146,13 @@ Eigen::SparseMatrix<double> lart::diagA(Eigen::SparseMatrix<double> A) {
 	Eigen::SparseMatrix<double> dA = Eigen::SparseMatrix<double>(A.rows(), A.cols());
 	dA.reserve(Eigen::VectorXi::Constant(A.rows() / 2, A.rows() / 2));
 
-	Eigen::RowVectorXd d = sum(A, 1);
+	Eigen::MatrixXd d = sum(A, 1);
 
 	std::vector<Eigen::Triplet<double>> tlist;
 	tlist.reserve(A.rows());
 
 	for (int k = 0; k < A.rows(); k++) {
-		tlist.push_back(Eigen::Triplet<double>(k, k, 1 / d[k]));
+		tlist.push_back(Eigen::Triplet<double>(k, k, 1 / d(k, 0)));
 	}
 	dA.setFromTriplets(tlist.begin(), tlist.end());
 	return dA;
@@ -219,16 +222,15 @@ Eigen::MatrixXd lart::pairwise_distance(Eigen::MatrixXd X, Eigen::MatrixXd Y) {
 }
 
 
-Eigen::RowVectorXd lart::sum(Eigen::SparseMatrix<double> X, int axis) {
+Eigen::MatrixXd lart::sum(Eigen::SparseMatrix<double> X, int axis) {
 
-	Eigen::RowVectorXd d (X.rows());
-
+	Eigen::MatrixXd d = Eigen::MatrixXd::Zero(X.rows(), 1);
 	for (int i = 0; i < X.outerSize(); i++) {
 		for (Eigen::SparseMatrix<double>::InnerIterator it(X, i); it; ++it) {
 			if (axis){
-				d(it.col()) += it.value();
+				d(it.col(), 0) = it.value() + d(it.col(), 0);
 			} else {
-				d(it.row()) += it.value();
+				d(it.row(), 0) = it.value() + d(it.row(), 0);
 			}
 		}
 	}
@@ -284,25 +286,24 @@ vector<int> lart::get_partition(vector<lart::cluster> clusters, int maxmodix, si
 	return result;
 }
 
-vector<double> lart::modMLPX(vector<lart::cluster> clusters, std::vector<Eigen::SparseMatrix<double>> a, Eigen::SparseMatrix<double>& sA, double gamma) {
-	// NOTE: sA side effect
+vector<double> lart::modMLPX(vector<lart::cluster> clusters, std::vector<Eigen::SparseMatrix<double>> a, double gamma, Eigen::SparseMatrix<double> sA0) {
 	vector<double> r;
 
 	size_t L = a.size();
 	size_t N = a[0].rows();
 
-	modmat(a, sA, gamma);
+	modmat(a, gamma, sA0);
+
+	//std::cout << sA0 << std::endl;
 
 	double diag = 0.0;
-	for (int i = 0; sA.rows(); i++){
-		diag += sA.coeffRef(i, i);
+	for (int i = 0; i < sA0.rows(); i++){
+		diag += sA0.coeffRef(i, i);
 	}
 
 	r.push_back(diag);
 
-
-
-	for (size_t i = N*L; i < clusters.size(); i++) {
+	for (size_t i = N * L; i < clusters.size(); i++) {
 		cluster data = clusters[i];
 
 		vector<int> v1 = clusters[data.left].orig;
@@ -311,18 +312,19 @@ vector<double> lart::modMLPX(vector<lart::cluster> clusters, std::vector<Eigen::
 
 		for (size_t i = 0; i < v1.size(); i++) {
 			for (size_t j = 0; j < v2.size(); j++) {
-				tmp += sA.coeffRef(v1[i], v2[j]);
+				tmp += sA0.coeffRef(v1[i], v2[j]);
 			}
 		}
 
 		tmp *= 2;
 		r.push_back(r[r.size() - 1] + tmp);
 	}
+
 	return r;
 }
 
 void lart::modmat(std::vector<Eigen::SparseMatrix<double>> a,
-	Eigen::SparseMatrix<double>& sA, double gamma) {
+	double gamma, Eigen::SparseMatrix<double>& sA) {
 
 	double twoum = 0.0;
 	for (int j = 0; j < sA.outerSize(); j++) {
@@ -335,34 +337,36 @@ void lart::modmat(std::vector<Eigen::SparseMatrix<double>> a,
 	size_t N = a[0].rows();
 
 	for (size_t i = 0; i < L; i++) {
-		Eigen::RowVectorXd d = sum(a[i], 0);
+		Eigen::MatrixXd d = sum(a[i], 0);
 
-		Eigen::MatrixXd	product = d.array() * d.array().transpose();
-		double sum = 0;
+		Eigen::MatrixXd	product = d * d.transpose();
 
+		long asum = 0;
 		for (int j = 0; j < a[i].outerSize(); j++) {
 			for (Eigen::SparseMatrix<double>::InnerIterator it(a[i], j); it; ++it) {
-				sum += it.value();
+				asum += it.value();
 			}
 		}
 
-		Eigen::MatrixXd	s1 = product.array() / sum;
-		Eigen::MatrixXd	s2 = s1.array() * gamma;
+		Eigen::MatrixXd	s1 = product.array() / asum;
+		Eigen::MatrixXd	s2 = s1.array().unaryExpr([](const double x) { return std::floor(x);}) * gamma;
+		Eigen::MatrixXd s3 = Eigen::MatrixXd(sA.block(i * N, i * N, N, N)) - s2;
 
-		std::cout << "d " <<  s2.rows() << " " << s2.cols() << std::endl;
+		std::cout << s3 << std::endl;
 
-		for (int j = i * N; j < sA.rows(); j++) {
-			for (int j = 0; j < sA.rows(); j++) {
-
+		for (int j = 0; j < s3.rows(); j++) {
+			for (int k = 0; k < s3.cols(); k++) {
+				sA.coeffRef(j + i * N, k + i * N) = s3(i, j);
 			}
 		}
-		//sA.block(i * N, i * N, N, N) = sA.block(i * N, i * N, N, N) - s2;
 	}
+
+	std::cout << sA << std::endl;
 
 	sA /= twoum;
 }
 
-std::vector<lart::cluster> lart::AgglomerativeClustering(Eigen::MatrixXd Dt, Eigen::MatrixXd cn, std::string Linkage) {
+std::vector<lart::cluster> lart::AgglomerativeClustering(Eigen::MatrixXd Dt, Eigen::SparseMatrix<double> cn, std::string Linkage) {
 
 	UNUSED(Linkage);
 
@@ -412,8 +416,6 @@ std::vector<lart::cluster> lart::AgglomerativeClustering(Eigen::MatrixXd Dt, Eig
 		average_linkage(tmp, clusters, d);
 		/* Remove the merged node from the distance matrix */
 		removeEntry(tmp, d.right);
-		//removeRow(tmp, d.right);
-		//removeColumn(tmp, d.right);
 
 		/* Update labels. If 0 merges with 10, we remove 10 from the pool and merge with 0 and it becomes cluster number 11 */
 		labels[d.left] = Dt.rows() + i;
@@ -424,7 +426,7 @@ std::vector<lart::cluster> lart::AgglomerativeClustering(Eigen::MatrixXd Dt, Eig
 	return clusters;
 }
 
-lart::dist lart::find_dist(Eigen::MatrixXd Dt, Eigen::MatrixXd cm) {
+lart::dist lart::find_dist(Eigen::MatrixXd Dt, Eigen::SparseMatrix<double> cm) {
 	lart::dist d;
 	d.left = -1;
 	d.right = -1;
@@ -432,7 +434,7 @@ lart::dist lart::find_dist(Eigen::MatrixXd Dt, Eigen::MatrixXd cm) {
 
 	for (int i = 0; i < Dt.rows(); i++) {
 		for (int j = i + 1; j < Dt.cols(); j++) {
-			if (Dt(i, j) < d.val && Dt(i,j) != 0 && cm(i, j) )  {
+			if (Dt(i, j) < d.val && Dt(i,j) != 0 && cm.coeffRef(i, j) )  {
 				d.left = i;
 				d.right = j;
 				d.val = Dt(i, j);
@@ -476,8 +478,6 @@ void lart::removeEntry(Eigen::MatrixXd& matrix, unsigned int entryToRemove)
 
 
 Eigen::MatrixXd lart::matrix_power(Eigen::MatrixXd m, uint32_t t) {
-	std::cout << "m " << m << std::endl;
-
 	if (t == 0) {
 		return Eigen::MatrixXd::Identity(m.rows(), m.cols());
 	}
