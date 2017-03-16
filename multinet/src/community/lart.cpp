@@ -356,14 +356,14 @@ void lart::modmat(std::vector<Eigen::SparseMatrix<double>> a,
 
 		for (int j = 0; j < s3.rows(); j++) {
 			for (int k = 0; k < s3.cols(); k++) {
-				sA.coeffRef(j + i * N, k + i * N) = s3(i, j);
+				sA.coeffRef(j + (i * N), k + (i * N)) = s3(j, k);
 			}
 		}
 	}
 
-	std::cout << sA << std::endl;
 
 	sA /= twoum;
+	std::cout << sA << std::endl;
 }
 
 std::vector<lart::cluster> lart::AgglomerativeClustering(Eigen::MatrixXd Dt, Eigen::SparseMatrix<double> cn, std::string Linkage) {
