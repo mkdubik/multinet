@@ -18,8 +18,6 @@ hash_set<ActorSharedPtr> lart::get_ml_community(
 		return actors;
 	}
 
-	//Eigen::IOFormat f(Eigen::StreamPrecision, 0, ", ", ",", "[", "]", "[", "]");
-
 	Eigen::SparseMatrix<double> sA = supraA(a, eps);
 	Eigen::SparseMatrix<double> dA = diagA(sA);
 	Eigen::SparseMatrix<double> aP = dA * sA;
@@ -34,14 +32,7 @@ hash_set<ActorSharedPtr> lart::get_ml_community(
 	auto maxmod = std::max_element(std::begin(mod), std::end(mod));
 	int maxmodix = std::distance(std::begin(mod), maxmod);
 
-	for (int i = 0; i < clusters.size(); i++) {
-		for (int j = 0; j < clusters[i].orig.size(); j++) {
-			std::cout << clusters[i].orig[j] << ", ";
-		}
-		std::cout << std::endl;
-	}
-
-	vector<int> partition = get_partition(clusters, maxmodix, a.size(), a[0].size());
+	vector<int> partition = get_partition(clusters, maxmodix, a.size(), a[0].rows());
 
 	for (size_t i = 0; i < partition.size(); i++) {
 		std::cout << partition[i] << " ";
@@ -72,8 +63,6 @@ std::vector<Eigen::SparseMatrix<double>> lart::ml_network2adj_matrix(MLNetworkSh
 		}
 		adj[l->id - 1] = m;
 	}
-
-	std::cout << " Done reading" << std::endl;
 
 	DTRACE0(ML2AM_END);
 	return adj;
@@ -265,6 +254,7 @@ vector<int> lart::get_partition(vector<lart::cluster> clusters, int maxmodix, si
 		parts.push_back(p);
 	}
 
+
 	vector<partition> r;
 	vector<int> val = parts[parts.size() - 1].vals;
 
@@ -283,6 +273,7 @@ vector<int> lart::get_partition(vector<lart::cluster> clusters, int maxmodix, si
 			result[r[i].vals[j]] = i;
 		}
 	}
+
 	return result;
 }
 
@@ -293,8 +284,6 @@ vector<double> lart::modMLPX(vector<lart::cluster> clusters, std::vector<Eigen::
 	size_t N = a[0].rows();
 
 	modmat(a, gamma, sA0);
-
-	//std::cout << sA0 << std::endl;
 
 	double diag = 0.0;
 	for (int i = 0; i < sA0.rows(); i++){
@@ -341,7 +330,7 @@ void lart::modmat(std::vector<Eigen::SparseMatrix<double>> a,
 
 		Eigen::MatrixXd	product = d * d.transpose();
 
-		long asum = 0;
+		double asum = 0;
 		for (int j = 0; j < a[i].outerSize(); j++) {
 			for (Eigen::SparseMatrix<double>::InnerIterator it(a[i], j); it; ++it) {
 				asum += it.value();
@@ -349,10 +338,8 @@ void lart::modmat(std::vector<Eigen::SparseMatrix<double>> a,
 		}
 
 		Eigen::MatrixXd	s1 = product.array() / asum;
-		Eigen::MatrixXd	s2 = s1.array().unaryExpr([](const double x) { return std::floor(x);}) * gamma;
+		Eigen::MatrixXd	s2 = s1.array() * gamma;
 		Eigen::MatrixXd s3 = Eigen::MatrixXd(sA.block(i * N, i * N, N, N)) - s2;
-
-		std::cout << s3 << std::endl;
 
 		for (int j = 0; j < s3.rows(); j++) {
 			for (int k = 0; k < s3.cols(); k++) {
@@ -361,9 +348,7 @@ void lart::modmat(std::vector<Eigen::SparseMatrix<double>> a,
 		}
 	}
 
-
 	sA /= twoum;
-	std::cout << sA << std::endl;
 }
 
 std::vector<lart::cluster> lart::AgglomerativeClustering(Eigen::MatrixXd Dt, Eigen::SparseMatrix<double> cn, std::string Linkage) {
