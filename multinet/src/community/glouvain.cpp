@@ -110,6 +110,8 @@ CommunityStructureSharedPtr glouvain::fit(MLNetworkSharedPtr mnet, std::string m
 
 			meta.assign(S);
 
+			DTRACE0(GLOUVAIN_PASS_END);
+
 			if (y.size() < limit) {
 				std::vector<Eigen::Triplet<double>> tlist;
 				Eigen::SparseMatrix<double> t = meta.get(0);
@@ -175,6 +177,7 @@ CommunityStructureSharedPtr glouvain::fit(MLNetworkSharedPtr mnet, std::string m
 		M = metanetwork(B, S2);
 		y = cutils::unique(S2);
 
+		DTRACE0(GLOUVAIN_PASS_END);
 	}
 
 	std::vector<unsigned int> partition(S.begin(), S.end());
