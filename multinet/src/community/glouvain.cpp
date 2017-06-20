@@ -137,6 +137,8 @@ CommunityStructureSharedPtr glouvain::fit(MLNetworkSharedPtr mnet, std::string m
 		M = B;
 	}
 
+	DTRACE0(GLOUVAIN_MODULARITY);
+
 	std::vector<int> S2(B.rows());
 	std::iota(S2.begin(), S2.end(), 0);
 	Sb.clear();

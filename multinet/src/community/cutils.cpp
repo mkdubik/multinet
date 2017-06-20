@@ -151,7 +151,9 @@ CommunityStructureSharedPtr cutils::nodes2communities(MLNetworkSharedPtr mnet, s
 			ActorSharedPtr a = mnet->get_actors()->get_at_index(j - (i * N));
 
 			NodeSharedPtr n = mnet->get_node(a,l);
-			if (n) result[nodes2cid[j]].insert(n);
+			if (n){
+				result[nodes2cid[j]].insert(n);
+			}
 		}
 	}
 
@@ -172,8 +174,10 @@ CommunityStructureSharedPtr cutils::actors2communities(MLNetworkSharedPtr mnet, 
 	hash_map<long, std::set<NodeSharedPtr> > result;
 
 	for (size_t i = 0; i < actors2cid.size(); i++) {
-		NodeListSharedPtr nodes = mnet->get_nodes(mnet->get_actors()->get_at_index(i));
-		for (auto n: *nodes) {
+		ActorSharedPtr a = mnet->get_actors()->get_at_index(i);
+
+		for (auto l : *mnet->get_layers()) {
+			NodeSharedPtr n = mnet->get_node(a,l);
 			if (n) {
 				result[actors2cid[i]].insert(n);
 			}
