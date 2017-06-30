@@ -15,7 +15,7 @@
 namespace mlnet {
 
 CommunityStructureSharedPtr pmm::fit(MLNetworkSharedPtr mnet, unsigned int k, unsigned int ell) {
-	DTRACE3(PMM_START, mnet->name.c_str(), k, ell);
+	DTRACE2(PMM_START, mnet->get_actors()->size(), mnet->get_layers()->size());
 	std::vector<Eigen::SparseMatrix<double>> a = cutils::ml_network2adj_matrix(mnet);
 
 	if (ell > (a[0].rows() - 1)) {

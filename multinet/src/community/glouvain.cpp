@@ -43,7 +43,7 @@ double glouvain::Q_handle(metanet M, std::vector<int> y, double twoum) {
 }
 
 CommunityStructureSharedPtr glouvain::fit(MLNetworkSharedPtr mnet, std::string m, double gamma, double omega, size_t limit) {
-	DTRACE4(GLOUVAIN_START, mnet->name.c_str(), m.c_str(), std::to_string(gamma), std::to_string(omega));
+	DTRACE2(GLOUVAIN_START, mnet->get_actors()->size(), mnet->get_layers()->size());
 
 	double (*move_func)(group_index &, int, Eigen::SparseMatrix<double>);
 	if ("moverandw" == m) {
