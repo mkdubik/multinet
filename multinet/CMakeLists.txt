@@ -102,7 +102,6 @@ endif(dtrace)
 
 find_package(BLAS REQUIRED)
 
-
 add_library (multinet SHARED ${SOURCES} ${PROBE_PATH})
 
 TARGET_LINK_LIBRARIES(multinet)
