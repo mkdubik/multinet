@@ -6,30 +6,46 @@
 
 using namespace mlnet;
 
-mlnet::CommunityStructureSharedPtr read_truth2(mlnet::MLNetworkSharedPtr mnet) {
+mlnet::CommunityStructureSharedPtr read_truth_overlap(mlnet::MLNetworkSharedPtr mnet) {
+	std::string truth_path = "truth/";
 
-	std::fstream myfile("/home/guest/multinet-evaluation/truth/1k_mix01", std::ios_base::in);
-	int actor;
-	int community;
+	std::fstream file("/home/guest/multinet-evaluation/truth/1000_overlap", std::ios_base::in);
+	std::map<unsigned int, std::vector<unsigned int>> mapped;
 
-	mlnet::hash_map<long,std::set<mlnet::NodeSharedPtr> > result;
+	std::string str;
+	while(getline(file, str))
+	{
+		std::istringstream ss(str);
+		unsigned int num;
 
-	while (myfile >> actor) {
-		myfile >> community;
-		mlnet::ActorSharedPtr a = mnet->get_actor(std::to_string(actor));
-		for (mlnet::LayerSharedPtr l: *mnet->get_layers()) {
-			result[community].insert(mnet->get_node(a,l));
+		int actor_id = 0;
+		/*
+		map from:
+		aid cid cid cid
+		to:
+		cid aid aid aid */
+
+		while(ss >> num) {
+			if (actor_id == 0){
+				actor_id = num;
+			} else {
+				mapped[num].push_back(actor_id);
+			}
 		}
+
 	}
 
 	mlnet::CommunityStructureSharedPtr communities = mlnet::community_structure::create();
-
-	for (auto pair: result) {
+	for(const auto &p : mapped) {
 		mlnet::CommunitySharedPtr c = mlnet::community::create();
-		for (mlnet::NodeSharedPtr node: pair.second) {
-			c->add_node(node);
+
+		for (auto m: p.second) {
+			for (mlnet::NodeSharedPtr n : *mnet->get_nodes(((
+				mnet->get_actor(std::to_string(m)))))) {
+				(*c).add_node(n);
+			}
 		}
-		communities->add_community(c);
+		(*communities).add_community(c);
 	}
 
 	return communities;
@@ -42,24 +58,26 @@ void test_lart() {
 
 
 	lart k;
-	//MLNetworkSharedPtr mnet = read_multilayer("/home/guest/multinet-evaluation/data/1k_mix01","toy",' ');
-	//MLNetworkSharedPtr mnet = read_multilayer("/home/guest/multinet-evaluation/data/1k_mix01","toy",' ');
-	MLNetworkSharedPtr mnet = read_multilayer("/home/guest/multinet-evaluation/data/1k_mix01","toy",' ');
 
-	//MLNetworkSharedPtr mnet3 = read_multilayer("/home/guest/multinet-evaluation/data/aucs","toy",',');
+	MLNetworkSharedPtr mnet = read_multilayer("/home/guest/multinet-evaluation/data/1000_overlap","aucs",' ');
+	//MLNetworkSharedPtr mnet3 = read_multilayer("/home/guest/multinet-evaluation/data/1k_mix","toy",',');
+
+	//MLNetworkSharedPtr mnet3 = read_multilayer("/home/guest/Downloads/10k_all.txt","toy",' ');
 	//MLNetworkSharedPtr mnet3 = read_multilayer("/home/guest/multinet-evaluation/data/fftwyt","toy",',');
-	//MLNetworkSharedPtr mnet3 = read_multilayer("../data/aucs.mpx","aucs",',');
-	//MLNetworkSharedPtr mnet3 = read_multilayer("/home/mikki/Downloads/1k_mix_025.mpx","sample",',');
+	//MLNetworkSharedPtr mnet3 = read_multilayer("/home/mikki/Downloads/friendfeed_ita.mpx","sample",',');
 	uint32_t t = 9;
 	double eps = 1;
 	double gamma = 1;
 
+
+
 	CommunityStructureSharedPtr c = k.fit(mnet, t, eps, gamma);
-	CommunityStructureSharedPtr truth = read_truth2(mnet);
+	CommunityStructureSharedPtr truth = read_truth_overlap(mnet);
 
-	std::cout << modularity(mnet, c, gamma) << std::endl;
+	std::cout << modularity(mnet, c, 1) << std::endl;
+	std::cout << modularity(mnet, truth, 1) << std::endl;;
+
 	std::cout << normalized_mutual_information(c, truth, mnet->get_nodes()->size()) << std::endl;
-
 
 	//std::ofstream out("/home/guest/multinet/multinet/test/DK_Pol_lart.txt");
 	//(*c).print(std::cout);

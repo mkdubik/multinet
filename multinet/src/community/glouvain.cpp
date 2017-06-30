@@ -43,7 +43,7 @@ double glouvain::Q_handle(metanet M, std::vector<int> y, double twoum) {
 }
 
 CommunityStructureSharedPtr glouvain::fit(MLNetworkSharedPtr mnet, std::string m, double gamma, double omega, size_t limit) {
-	DTRACE4(GLOUVAIN_START, mnet->name.c_str(), m.c_str(), std::to_string(gamma), std::to_string(omega));
+	DTRACE2(GLOUVAIN_START, mnet->get_actors()->size(), mnet->get_layers()->size());
 
 	double (*move_func)(group_index &, int, Eigen::SparseMatrix<double>);
 	if ("moverandw" == m) {
@@ -110,6 +110,8 @@ CommunityStructureSharedPtr glouvain::fit(MLNetworkSharedPtr mnet, std::string m
 
 			meta.assign(S);
 
+			DTRACE0(GLOUVAIN_PASS_END);
+
 			if (y.size() < limit) {
 				std::vector<Eigen::Triplet<double>> tlist;
 				Eigen::SparseMatrix<double> t = meta.get(0);
@@ -134,6 +136,8 @@ CommunityStructureSharedPtr glouvain::fit(MLNetworkSharedPtr mnet, std::string m
 		B = cutils::ng_modularity(twoum, cutils::ml_network2adj_matrix(mnet), gamma, omega);
 		M = B;
 	}
+
+	DTRACE0(GLOUVAIN_MODULARITY);
 
 	std::vector<int> S2(B.rows());
 	std::iota(S2.begin(), S2.end(), 0);
@@ -175,6 +179,7 @@ CommunityStructureSharedPtr glouvain::fit(MLNetworkSharedPtr mnet, std::string m
 		M = metanetwork(B, S2);
 		y = cutils::unique(S2);
 
+		DTRACE0(GLOUVAIN_PASS_END);
 	}
 
 	std::vector<unsigned int> partition(S.begin(), S.end());
